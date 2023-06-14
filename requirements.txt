@@ -1,7 +1,7 @@
 Django==4.2.2
 psycopg2-binary==2.9.6
 PyJWT==2.7.0
-ipython==8.13.0
+ipython==7.28.0
 django-redis==5.2.0
 firebase-admin==6.1.0
 google-api-core==2.11.0
