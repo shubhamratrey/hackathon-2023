@@ -42,6 +42,8 @@ class Video(models.Model):
     def to_json(self):
         doc = {
             'id': self.pk,
+            'title': self.title,
+            'slug': self.slug,
             'youtube_link': self.youtube_url,
             'status': self.status,
             's3_link': self.get_s3_link(),
