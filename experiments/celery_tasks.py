@@ -228,3 +228,29 @@ def upload_video_to_youtube():
 
     # Print the uploaded video details
     print("Video uploaded! Video ID: {response['id']}")
+
+
+@shared_task
+def send_slack_message(channel, username, text):
+    import requests
+    from django.conf import settings
+    response = requests.post('https://slack.com/api/chat.postMessage', json={
+        "channel": channel,
+        "username": username,
+        "blocks": [
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": text
+                }
+            }
+        ]
+    }, headers={
+        'Authorization': 'Bearer %s' % settings.SLACK_BOT_API_TOKEN,
+        'Content-Type': 'application/json;charset=UTF-8'
+    })
+    json_data = response.json()
+    if not json_data['ok']:
+        return False
+    return True

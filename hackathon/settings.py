@@ -157,3 +157,4 @@ GOOGLE_APPLICATION_CREDENTIALS_PATH = ''
 THIRD_PARTIES = COMMON_SECRETS.get('third-parties', {})
 OPEN_AI_TOKEN = THIRD_PARTIES.get('openai_token', '')
 ELEVEN_LABS = THIRD_PARTIES.get('eleven_labs', '')
+SLACK_BOT_API_TOKEN = THIRD_PARTIES.get('slack_bot_api_token', '')
