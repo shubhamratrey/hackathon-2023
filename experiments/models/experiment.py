@@ -18,6 +18,7 @@ class Video(models.Model):
     transcription = models.TextField(null=True)
     voice_id = models.CharField(max_length=15, null=True)
 
+    media_key = models.CharField(max_length=512, null=True)
     # is_active = models.BooleanField(default=True, db_index=True)
     # data = models.JSONField(default=dict)
     # original_media_url = models.CharField(max_length=512, default='', db_index=True)
@@ -31,3 +32,21 @@ class Video(models.Model):
         while Video.objects.filter(slug=slug).exists():
             slug = slugify(self.title) + "-" + random.choice(list(string.ascii_uppercase))
         return slug
+
+    def get_s3_link(self):
+        if self.media_key:
+            return 'https://kuku-hackathon.s3.ap-south-1.amazonaws.com/{}'.format(self.media_key)
+        else:
+            return None
+
+    def to_json(self):
+        doc = {
+            'id': self.pk,
+            'youtube_link': self.youtube_url,
+            'status': self.status,
+            's3_link': self.get_s3_link(),
+            'translated_text': self.translated_text,
+            'transcription': self.transcription,
+            'voice_id': self.voice_id
+        }
+        return doc

@@ -174,7 +174,7 @@ def replace_video_audio(video_id):
     import os
     from yt_dlp import YoutubeDL
     from experiments.models import Video
-    from constants import TEMP_LOCAL_PATH
+    from constants import TEMP_LOCAL_PATH, FLOW_STATUS
 
     send_slack_message.delay(channel="#hackathon-2023-logs", username="Log:{}".format(video_id),
                              text="Start replace_video_audio: {}".format(video_id))
@@ -182,6 +182,8 @@ def replace_video_audio(video_id):
         video = Video.objects.get(pk=video_id)
     except Video.DoesNotExist:
         return
+    video.status = FLOW_STATUS.MERGING_AUDIO_VIDEO_IN_PROCESS
+    video.save()
 
     # Step 1: Download the YouTube video
     output_file = TEMP_LOCAL_PATH.TEMP_INPUT_VIDEO.format(video_id)
@@ -198,60 +200,94 @@ def replace_video_audio(video_id):
         output_path=TEMP_LOCAL_PATH.TEMP_OUTPUT_VIDEO.format(video_id),
     )
     os.system(ffmpeg_command)
+
+    video.status = FLOW_STATUS.MERGING_AUDIO_VIDEO_COMPLETED
+    video.save()
+
     send_slack_message.delay(channel="#hackathon-2023-logs", username="Log:{}".format(video_id),
                              text="End replace_video_audio: {}".format(video_id))
+    upload_video.delay(video_id=video_id)
 
 
 @shared_task
-def upload_video_to_youtube():
-    import os
-    import googleapiclient.discovery
-    from google.oauth2 import service_account
+def upload_video(video_id):
+    import boto3
+    from experiments.models import Video
 
-    # Set your API credentials file path
-    api_credentials_file = 'path/to/credentials.json'
+    from constants import TEMP_LOCAL_PATH, FLOW_STATUS
 
-    # Set the path of the video file to be uploaded
-    video_file_path = 'path/to/video.mp4'
+    send_slack_message.delay(channel="#hackathon-2023-logs", username="Log:{}".format(video_id),
+                             text="Start replace_video_audio: {}".format(video_id))
+    try:
+        video = Video.objects.get(pk=video_id)
+    except Video.DoesNotExist:
+        return
+    video.status = FLOW_STATUS.UPLOADING_VIDEO
+    video.save()
 
-    # Set the title, description, and tags for the uploaded video
-    video_title = 'My Uploaded Video'
-    video_description = 'Description of my video'
-    video_tags = ['tag1', 'tag2', 'tag3']
+    output_file_path = TEMP_LOCAL_PATH.TEMP_OUTPUT_VIDEO.format(video_id)
 
-    # Authenticate and create a YouTube Data API client
-    credentials = service_account.Credentials.from_service_account_file(api_credentials_file, scopes=[
-        'https://www.googleapis.com/auth/youtube.upload'])
-    youtube = googleapiclient.discovery.build('youtube', 'v3', credentials=credentials)
+    s3 = boto3.resource('s3')
+    filename = output_file_path.split('/')[1]
+    file_object = s3.Object('kuku-hackathon', filename)
+    file_object.upload_file(output_file_path, ExtraArgs={'ACL': 'public-read'})
+    key = file_object.key
 
-    # Create a request body with video details
-    request_body = {
-        'snippet': {
-            'title': video_title,
-            'description': video_description,
-            'tags': video_tags
-        },
-        'status': {
-            'privacyStatus': 'public'
-        }
-    }
+    video.media_key = key
+    video.status = FLOW_STATUS.COMPLETED
+    video.save()
 
-    # Create the video insert request
-    insert_request = youtube.videos().insert(
-        part='snippet,status',
-        body=request_body,
-        media_body=googleapiclient.http.MediaFileUpload(video_file_path, chunksize=-1, resumable=True)
-    )
+    send_slack_message.delay(channel="#hackathon-2023-logs", username="Log:{}".format(video_id),
+                             text="Video successful completed\n{}".format(video_id, video.get_s3_link()))
 
-    # Execute the video insert request
-    response = None
-    while response is None:
-        status, response = insert_request.next_chunk()
-        if status:
-            print(f"Uploaded {int(status.progress() * 100)}%")
-
-    # Print the uploaded video details
-    print("Video uploaded! Video ID: {response['id']}")
+    # import os
+    # import googleapiclient.discovery
+    # from google.oauth2 import service_account
+    #
+    # # Set your API credentials file path
+    # api_credentials_file = 'path/to/credentials.json'
+    #
+    # # Set the path of the video file to be uploaded
+    # video_file_path = 'path/to/video.mp4'
+    #
+    # # Set the title, description, and tags for the uploaded video
+    # video_title = 'My Uploaded Video'
+    # video_description = 'Description of my video'
+    # video_tags = ['tag1', 'tag2', 'tag3']
+    #
+    # # Authenticate and create a YouTube Data API client
+    # credentials = service_account.Credentials.from_service_account_file(api_credentials_file, scopes=[
+    #     'https://www.googleapis.com/auth/youtube.upload'])
+    # youtube = googleapiclient.discovery.build('youtube', 'v3', credentials=credentials)
+    #
+    # # Create a request body with video details
+    # request_body = {
+    #     'snippet': {
+    #         'title': video_title,
+    #         'description': video_description,
+    #         'tags': video_tags
+    #     },
+    #     'status': {
+    #         'privacyStatus': 'public'
+    #     }
+    # }
+    #
+    # # Create the video insert request
+    # insert_request = youtube.videos().insert(
+    #     part='snippet,status',
+    #     body=request_body,
+    #     media_body=googleapiclient.http.MediaFileUpload(video_file_path, chunksize=-1, resumable=True)
+    # )
+    #
+    # # Execute the video insert request
+    # response = None
+    # while response is None:
+    #     status, response = insert_request.next_chunk()
+    #     if status:
+    #         print(f"Uploaded {int(status.progress() * 100)}%")
+    #
+    # # Print the uploaded video details
+    # print("Video uploaded! Video ID: {response['id']}")
 
 
 @shared_task

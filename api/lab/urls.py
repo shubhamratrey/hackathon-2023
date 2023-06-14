@@ -6,5 +6,5 @@ from . import (UploadVideoV1, GetVideoDetailV1)
 
 urlpatterns = [
     re_path('^upload-video/$', csrf_exempt(UploadVideoV1.as_versioned_view())),
-    re_path('^(?P<video_id>\d+)/detail/$', GetVideoDetailV1.as_versioned_view()),
+    re_path('^video-detail/$', GetVideoDetailV1.as_versioned_view()),
 ]

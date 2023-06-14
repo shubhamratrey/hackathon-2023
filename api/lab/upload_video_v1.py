@@ -21,10 +21,21 @@ class UploadVideoV1(APIResponseBase):
             self.set_404('Param missing', "INVALID_PARAM")
             return data
 
-        if Video.objects.filter(youtube_url=youtube_url, input_language=input_language,
-                                output_language=output_language).exists():
-            self.set_404('Video already exists', "INVALID_VIDEO_URL")
-            return data
+        try:
+            video = Video.objects.get(youtube_url=youtube_url, input_language=input_language,
+                                      output_language=output_language)
+        except Video.DoesNotExist:
+            pass
+        else:
+            if video:
+                data['video'] = video.to_json()
+                data['message'] = 'Video already exists'
+                return data
+
+        # if Video.objects.filter(youtube_url=youtube_url, input_language=input_language,
+        #                         output_language=output_language).exists():
+        #     self.set_404('Video already exists', "INVALID_VIDEO_URL")
+        #     return data
 
         video = Video()
         video.output_language = output_language
@@ -32,7 +43,6 @@ class UploadVideoV1(APIResponseBase):
         video.youtube_url = youtube_url
         video.save()
         data['message'] = "Link queued"
-        data['video_id'] = video.id
-        data['video_youtube_link'] = video.youtube_url
+        data['video'] = video.to_json()
         separate_audio_from_file.delay(video_id=video.id)
         return data
