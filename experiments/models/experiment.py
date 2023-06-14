@@ -45,6 +45,7 @@ class Video(models.Model):
             'id': self.pk,
             'title': self.title,
             'slug': self.slug,
+            'duration': self.duration,
             'youtube_link': self.youtube_url,
             'status': self.status,
             's3_link': self.get_s3_link(),
