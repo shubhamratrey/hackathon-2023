@@ -55,17 +55,22 @@ def create_transcription(video_id):
         video = Video.objects.get(pk=video_id)
     except Video.DoesNotExist:
         return
+    output_language = video.output_language
     if not video.transcription:
         video.status = FLOW_STATUS.TRANSCRIPTION_IN_PROCESS
         video.save()
         openai.api_key = settings.OPEN_AI_TOKEN
         audio_file = open(TEMP_LOCAL_PATH.TEMP_INPUT_AUDIO.format(video.id), "rb")
+        prompt = "This audio is youtube reel please try match speed"
+        if output_language == 'hi':
+            prompt = "This audio is youtube reel please try to transcribe as hinglish."
         transcription = openai.Audio.transcribe(
             model="whisper-1",
             file=audio_file,
             response_format='text',
-            language=video.input_language,
-            temperature=0.3
+            language='en',
+            temperature=0.3,
+            prompt=prompt
         )
         video.transcription = transcription
         video.save()
