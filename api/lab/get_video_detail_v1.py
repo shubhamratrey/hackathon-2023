@@ -1,7 +1,6 @@
 from api.responses.base import APIResponseBase
 from utils.validators import allowed_methods
 from experiments.models import Video
-from experiments.celery_tasks import replace_video_audio
 
 
 class GetVideoDetailV1(APIResponseBase):
@@ -19,11 +18,11 @@ class GetVideoDetailV1(APIResponseBase):
             video = Video.objects.get(pk=video_id)
         except Video.DoesNotExist:
             return data
-        replace_video_audio(video_id=video_id)
         data.update({
             'id': video.id,
             'title': video.title,
             'slug': video.slug,
-            'transcription': video.transcription
+            'transcription': video.transcription,
+            'translated_text': video.translated_text
         })
         return data

@@ -20,10 +20,11 @@ class UploadVideoV1(APIResponseBase):
         if not (youtube_url or output_language or input_language):
             self.set_404('Param missing', "INVALID_PARAM")
             return data
-        # if Video.objects.filter(youtube_url=youtube_url, input_language=input_language,
-        #                         output_language=output_language).exists():
-        #     self.set_404('Video already exists', "INVALID_VIDEO_URL")
-        #     return data
+
+        if Video.objects.filter(youtube_url=youtube_url, input_language=input_language,
+                                output_language=output_language).exists():
+            self.set_404('Video already exists', "INVALID_VIDEO_URL")
+            return data
 
         video = Video()
         video.output_language = output_language

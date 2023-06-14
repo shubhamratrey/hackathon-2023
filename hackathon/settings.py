@@ -118,5 +118,7 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 COMMON_SECRETS = {}
+GOOGLE_APPLICATION_CREDENTIALS_PATH = ''
 THIRD_PARTIES = COMMON_SECRETS.get('third-parties', {})
 OPEN_AI_TOKEN = THIRD_PARTIES.get('openai_token', '')
+ELEVEN_LABS = THIRD_PARTIES.get('eleven_labs', '')
