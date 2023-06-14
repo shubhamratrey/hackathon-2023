@@ -141,6 +141,7 @@ def extract_title(video_id):
 
 @shared_task
 def convert_text_to_speech(video_id):
+    import os
     import requests
     from django.conf import settings
     from experiments.models import Video
@@ -154,13 +155,27 @@ def convert_text_to_speech(video_id):
     except Video.DoesNotExist:
         return "Video.DoesNotExist"
 
+    output_file = TEMP_LOCAL_PATH.TEMP_OUTPUT_AUDIO.format(video_id)
+    if os.path.isfile(output_file):
+        replace_video_audio.delay(video_id=video_id)
+        return
+
     voice_map = {
-        'shah-rukh-khan': '2uIMnkULEb8HIcIhWtLF',
-        'nissa': 'IBuG3Ez0yncjGriOosVn',
-        'harsha-bhogle': 'tzc0mnukskitnp0xJrm8',
-        'arnold': 'VR6AewLTigWG4xSOukaG',
+        "M": {
+            'shah-rukh-khan': '2uIMnkULEb8HIcIhWtLF',
+            'harsha-bhogle': 'tzc0mnukskitnp0xJrm8',
+            'arnold': 'VR6AewLTigWG4xSOukaG',
+        },
+        "F": {
+            'nissa': 'IBuG3Ez0yncjGriOosVn',
+        }
     }
-    voice_id = voice_map.get('nissa')
+    if video.voice_gender == "M":
+        voice_id = voice_map.get(video.voice_gender, {}).get('harsha-bhogle')
+    else:
+        voice_id = voice_map.get(video.voice_gender, {}).get('nissa')
+    if not voice_id:
+        voice_id = 'IBuG3Ez0yncjGriOosVn'
 
     url = "https://api.elevenlabs.io/v1/text-to-speech/{voice_id}".format(voice_id=voice_id)
     headers = {
@@ -183,7 +198,6 @@ def convert_text_to_speech(video_id):
 
     response = requests.post(url, json=data, headers=headers)
 
-    output_file = TEMP_LOCAL_PATH.TEMP_OUTPUT_AUDIO.format(video_id)
     with open(output_file, 'wb') as f:
         for chunk in response.iter_content(chunk_size=1024):
             if chunk:
@@ -214,20 +228,23 @@ def replace_video_audio(video_id):
     video.save()
 
     # Step 1: Download the YouTube video
-    output_file = TEMP_LOCAL_PATH.TEMP_INPUT_VIDEO.format(video_id)
-    with YoutubeDL({
-        'format': 'bestvideo[height<=480][ext=mp4]/best[ext=mp4][height<=480]',
-        'outtmpl': output_file,
-    }) as ydl:
-        ydl.download([video.youtube_url])
+    temp_input_video = TEMP_LOCAL_PATH.TEMP_INPUT_VIDEO.format(video_id)
+    if not os.path.isfile(temp_input_video):
+        with YoutubeDL({
+            'format': 'bestvideo[height<=480][ext=mp4]/best[ext=mp4][height<=480]',
+            'outtmpl': temp_input_video,
+        }) as ydl:
+            ydl.download([video.youtube_url])
 
-    # Add audio to video
-    ffmpeg_command = 'ffmpeg -i "{video_path}" -i "{audio_file}" -c:v copy -map 0:v:0 -map 1:a:0 -shortest "{output_path}"'.format(
-        video_path=output_file,
-        audio_file=TEMP_LOCAL_PATH.TEMP_OUTPUT_AUDIO.format(video_id),
-        output_path=TEMP_LOCAL_PATH.TEMP_OUTPUT_VIDEO.format(video_id),
-    )
-    os.system(ffmpeg_command)
+    temp_output_video = TEMP_LOCAL_PATH.TEMP_OUTPUT_VIDEO.format(video_id)
+    if not os.path.isfile(temp_output_video):
+        # Add audio to video
+        ffmpeg_command = 'ffmpeg -i "{video_path}" -i "{audio_file}" -c:v copy -map 0:v:0 -map 1:a:0 -shortest "{output_path}"'.format(
+            video_path=temp_input_video,
+            audio_file=TEMP_LOCAL_PATH.TEMP_OUTPUT_AUDIO.format(video_id),
+            output_path=temp_output_video,
+        )
+        os.system(ffmpeg_command)
 
     video.status = FLOW_STATUS.MERGING_AUDIO_VIDEO_COMPLETED
     video.save()
@@ -239,6 +256,7 @@ def replace_video_audio(video_id):
 
 @shared_task
 def upload_video(video_id):
+    import os
     import boto3
     from experiments.models import Video
 
@@ -267,6 +285,12 @@ def upload_video(video_id):
 
     send_slack_message.delay(channel="#hackathon-2023-logs", username="Log:{}".format(video_id),
                              text="Video successful completed\n{}".format(video_id, video.get_s3_link()))
+
+    # Removing temporary files
+    for path in [TEMP_LOCAL_PATH.TEMP_INPUT_AUDIO, TEMP_LOCAL_PATH.TEMP_OUTPUT_AUDIO,
+                 TEMP_LOCAL_PATH.TEMP_INPUT_VIDEO, TEMP_LOCAL_PATH.TEMP_OUTPUT_VIDEO]:
+        if not os.path.isfile(path.format(video_id)):
+            os.remove(path.format(video_id))
 
     # import os
     # import googleapiclient.discovery

@@ -22,10 +22,11 @@ class UploadVideoV1(APIResponseBase):
             self.set_404('Param missing', "INVALID_PARAM")
             return data
         voice_gender = str(voice_gender).lower()
+        voice_gender = "M" if voice_gender == "male" else "F"
 
         try:
             video = Video.objects.get(youtube_url=youtube_url, input_language=input_language,
-                                      output_language=output_language)
+                                      output_language=output_language, voice_gender=voice_gender)
         except Video.DoesNotExist:
             pass
         else:
@@ -44,7 +45,7 @@ class UploadVideoV1(APIResponseBase):
         video.input_language = input_language
         video.youtube_url = youtube_url
         video.slug = youtube_url
-        video.voice_gender = "M" if voice_gender == "male" else "F"
+        video.voice_gender = voice_gender
         video.save()
         data['message'] = "Link queued"
         data['video'] = video.to_json()
