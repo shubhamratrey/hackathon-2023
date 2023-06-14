@@ -75,10 +75,24 @@ def create_transcription(video_id):
         video.transcription = transcription
         video.save()
     if not video.translated_text and video.transcription:
-        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = settings.GOOGLE_APPLICATION_CREDENTIALS_PATH
-        translate_client = translate_v2.Client()
-        result = translate_client.translate(video.transcription, target_language=video.output_language)
-        translated_text = result.get('translatedText')
+        if output_language == 'hi':
+            prompt = """This audio is youtube reel please try to transcribe as hinglish in hindi text\n\n{}""".format(
+                video.transcription)
+            openai.api_key = settings.OPEN_AI_TOKEN
+            response = openai.Completion.create(
+                engine='text-davinci-003',
+                prompt=prompt,
+                max_tokens=1500,
+                temperature=0.2,
+                n=1,
+                stop=None,
+            )
+            translated_text = response.get('choices')[0]['text']
+        else:
+            os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = settings.GOOGLE_APPLICATION_CREDENTIALS_PATH
+            translate_client = translate_v2.Client()
+            result = translate_client.translate(video.transcription, target_language=video.output_language)
+            translated_text = result.get('translatedText')
 
         video.status = FLOW_STATUS.TRANSCRIPTION_COMPLETED
         video.translated_text = translated_text
