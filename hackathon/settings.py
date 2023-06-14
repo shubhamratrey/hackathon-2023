@@ -149,6 +149,10 @@ REDIS_CONF = {
     }
 }
 
+
+BROKER_URL = COMMON_SECRETS.get('celery_broker_url', '')
+CELERY_BROKER_URL = COMMON_SECRETS.get('celery_broker_url', '')
+
 GOOGLE_APPLICATION_CREDENTIALS_PATH = ''
 THIRD_PARTIES = COMMON_SECRETS.get('third-parties', {})
 OPEN_AI_TOKEN = THIRD_PARTIES.get('openai_token', '')
