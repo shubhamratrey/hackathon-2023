@@ -4,3 +4,4 @@ venv
 .DS_Store
 /tmp/
 /tmp
+/secrets_manager.json
