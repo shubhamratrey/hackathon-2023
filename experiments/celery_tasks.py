@@ -16,24 +16,23 @@ def separate_audio_from_file(video_id):
     video.save()
 
     output_file = TEMP_LOCAL_PATH.TEMP_INPUT_AUDIO.format(video_id)
-    if os.path.isfile(output_file):
-        return
-    ydl_opts = {
-        'format': 'm4a/bestaudio/best',
-        'paths': {'home': output_file.split('/')[0]},
-        'outtmpl': {'default': output_file.split('/')[1]},
-        'postprocessors': [{
-            'key': 'FFmpegExtractAudio',
-            'preferredcodec': 'm4a',
-        }]
-    }
-    with YoutubeDL(ydl_opts) as ydl:
-        error_code = ydl.download([video.youtube_url])
-        if error_code != 0:
-            raise Exception('Failed to download video')
+    if not os.path.isfile(output_file):
+        ydl_opts = {
+            'format': 'm4a/bestaudio/best',
+            'paths': {'home': output_file.split('/')[0]},
+            'outtmpl': {'default': output_file.split('/')[1]},
+            'postprocessors': [{
+                'key': 'FFmpegExtractAudio',
+                'preferredcodec': 'm4a',
+            }]
+        }
+        with YoutubeDL(ydl_opts) as ydl:
+            error_code = ydl.download([video.youtube_url])
+            if error_code != 0:
+                raise Exception('Failed to download video')
 
-    video.status = FLOW_STATUS.AUDIO_VIDEO_SEPARATION_COMPLETED
-    video.save()
+        video.status = FLOW_STATUS.AUDIO_VIDEO_SEPARATION_COMPLETED
+        video.save()
     create_transcription(video_id=video_id)
     extract_title(video_id=video_id)
 
@@ -48,31 +47,32 @@ def create_transcription(video_id):
     from constants import TEMP_LOCAL_PATH, FLOW_STATUS
 
     try:
-        video = Video.objects.get(pk=video_id, transcription__isnull=True)
+        video = Video.objects.get(pk=video_id)
     except Video.DoesNotExist:
         return
-    video.status = FLOW_STATUS.TRANSCRIPTION_IN_PROCESS
-    video.save()
-    openai.api_key = settings.OPEN_AI_TOKEN
-    audio_file = open(TEMP_LOCAL_PATH.TEMP_INPUT_AUDIO.format(video.id), "rb")
-    transcription = openai.Audio.transcribe(
-        model="whisper-1",
-        file=audio_file,
-        response_format='text',
-        language='en',
-        temperature=0.3
-    )
-    video.transcription = transcription
-    video.save()
+    if not video.transcription:
+        video.status = FLOW_STATUS.TRANSCRIPTION_IN_PROCESS
+        video.save()
+        openai.api_key = settings.OPEN_AI_TOKEN
+        audio_file = open(TEMP_LOCAL_PATH.TEMP_INPUT_AUDIO.format(video.id), "rb")
+        transcription = openai.Audio.transcribe(
+            model="whisper-1",
+            file=audio_file,
+            response_format='text',
+            language='en',
+            temperature=0.3
+        )
+        video.transcription = transcription
+        video.save()
+    if not video.translated_text:
+        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = settings.GOOGLE_APPLICATION_CREDENTIALS_PATH
+        translate_client = translate_v2.Client()
+        result = translate_client.translate(transcription, target_language=video.output_language)
+        translated_text = result.get('translatedText')
 
-    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = settings.GOOGLE_APPLICATION_CREDENTIALS_PATH
-    translate_client = translate_v2.Client()
-    result = translate_client.translate(transcription, target_language=video.output_language)
-    translated_text = result.get('translatedText')
-
-    video.status = FLOW_STATUS.TRANSCRIPTION_COMPLETED
-    video.translated_text = translated_text
-    video.save()
+        video.status = FLOW_STATUS.TRANSCRIPTION_COMPLETED
+        video.translated_text = translated_text
+        video.save()
 
 
 @shared_task
@@ -96,6 +96,7 @@ def extract_title(video_id):
         video.title = title
         video.slug = video.get_unique_slug()
         video.save()
+        print('saved')
 
 
 @shared_task

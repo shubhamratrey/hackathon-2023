@@ -153,7 +153,7 @@ REDIS_CONF = {
 BROKER_URL = COMMON_SECRETS.get('celery_broker_url', '')
 CELERY_BROKER_URL = COMMON_SECRETS.get('celery_broker_url', '')
 
-GOOGLE_APPLICATION_CREDENTIALS_PATH = ''
+GOOGLE_APPLICATION_CREDENTIALS_PATH = 'py-bq.json'
 THIRD_PARTIES = COMMON_SECRETS.get('third-parties', {})
 OPEN_AI_TOKEN = THIRD_PARTIES.get('openai_token', '')
 ELEVEN_LABS = THIRD_PARTIES.get('eleven_labs', '')
