@@ -17,9 +17,11 @@ class UploadVideoV1(APIResponseBase):
         youtube_url = self.get_param('video_url')
         output_language = self.get_param('output_language')
         input_language = self.get_param('input_language')
-        if not (youtube_url or output_language or input_language):
+        voice_gender = str(self.get_param('voice_gender')).lower()
+        if not (youtube_url or output_language or input_language or voice_gender):
             self.set_404('Param missing', "INVALID_PARAM")
             return data
+        voice_gender = str(voice_gender).lower()
 
         try:
             video = Video.objects.get(youtube_url=youtube_url, input_language=input_language,
@@ -42,6 +44,7 @@ class UploadVideoV1(APIResponseBase):
         video.input_language = input_language
         video.youtube_url = youtube_url
         video.slug = youtube_url
+        video.voice_gender = "M" if voice_gender == "male" else "F"
         video.save()
         data['message'] = "Link queued"
         data['video'] = video.to_json()

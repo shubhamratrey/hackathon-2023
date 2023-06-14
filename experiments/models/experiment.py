@@ -7,12 +7,17 @@ from constants import (FLOW_STATUS)
 
 
 class Video(models.Model):
+    GENDER_CHOICES = (
+        ('M', 'Male'),
+        ('F', 'Female'),
+    )
     title = models.CharField(max_length=255)
     slug = models.SlugField(max_length=255, unique=True)
     duration = models.IntegerField(default=0)
     youtube_url = models.CharField(max_length=512, null=False, db_index=True)
     input_language = models.CharField(max_length=512, null=False, db_index=True)
     output_language = models.CharField(max_length=512, null=False, db_index=True)
+    voice_gender = models.CharField(max_length=1, choices=GENDER_CHOICES, blank=True, null=True, default=None)
     status = models.CharField(max_length=100, null=False, default=FLOW_STATUS.IN_QUEUE)
 
     translated_text = models.TextField(null=True)
@@ -51,6 +56,7 @@ class Video(models.Model):
             's3_link': self.get_s3_link(),
             'translated_text': self.translated_text,
             'transcription': self.transcription,
-            'voice_id': self.voice_id
+            'voice_id': self.voice_id,
+            'voice_gender': self.voice_gender,
         }
         return doc
