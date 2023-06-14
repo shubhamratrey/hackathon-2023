@@ -142,7 +142,7 @@ def convert_text_to_speech(video_id):
         "xi-api-key": settings.ELEVEN_LABS
     }
     data = {
-        "text": video.translated_text[:100],
+        "text": video.translated_text,
         "model_id": "eleven_multilingual_v1",
         "voice_settings": {
             "stability": 0.5,
