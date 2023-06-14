@@ -54,7 +54,7 @@ def create_transcription(video_id):
     video.status = FLOW_STATUS.TRANSCRIPTION_IN_PROCESS
     video.save()
     openai.api_key = settings.OPEN_AI_TOKEN
-    audio_file = open(TEMP_LOCAL_PATH.TEMP_AUDIO.format(video.id), "rb")
+    audio_file = open(TEMP_LOCAL_PATH.TEMP_INPUT_AUDIO.format(video.id), "rb")
     transcription = openai.Audio.transcribe(
         model="whisper-1",
         file=audio_file,
