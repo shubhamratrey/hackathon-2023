@@ -228,22 +228,3 @@ def upload_video_to_youtube():
 
     # Print the uploaded video details
     print("Video uploaded! Video ID: {response['id']}")
-
-# import boto3
-# from django.conf import settings
-#
-# job_name = '84dc02e6-4bfe-4c2b-84c5-5572fa879dSSS536'
-#
-# client = boto3.client('transcribe', region_name=settings.AWS_SECRET_MANAGER_REGION)
-# response = client.start_transcription_job(
-#     TranscriptionJobName=job_name,
-#     Media={
-#         'MediaFileUri': 'https://kukufm.s3.ap-south-1.amazonaws.com/audio_2.m4a'
-#     },
-#     OutputBucketName='kukufm',
-#     OutputKey='audio-transcripts/' + job_name + '.json',
-#     IdentifyLanguage=True,
-# )
-#
-# # Get job status
-# client.get_transcription_job(TranscriptionJobName=job_name)
