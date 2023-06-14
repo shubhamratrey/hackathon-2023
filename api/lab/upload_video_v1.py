@@ -32,5 +32,7 @@ class UploadVideoV1(APIResponseBase):
         video.youtube_url = youtube_url
         video.save()
         data['message'] = "Link queued"
-        separate_audio_from_file(video_id=video.id)
+        data['video_id'] = video.id
+        data['video_youtube_link'] = video.youtube_url
+        separate_audio_from_file.delay(video_id=video.id)
         return data

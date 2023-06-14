@@ -8,6 +8,8 @@ def separate_audio_from_file(video_id):
     from yt_dlp import YoutubeDL
     from experiments.models import Video
     from constants import TEMP_LOCAL_PATH, FLOW_STATUS
+    send_slack_message.delay(channel="#hackathon-2023-logs", username="Log:{}".format(video_id),
+                             text="Start separate_audio_from_file: {}".format(video_id))
     try:
         video = Video.objects.get(pk=video_id)
     except Video.DoesNotExist:
@@ -33,8 +35,11 @@ def separate_audio_from_file(video_id):
 
         video.status = FLOW_STATUS.AUDIO_VIDEO_SEPARATION_COMPLETED
         video.save()
-    create_transcription(video_id=video_id)
-    extract_title(video_id=video_id)
+
+    send_slack_message.delay(channel="#hackathon-2023-logs", username="Log:{}".format(video_id),
+                             text="End separate_audio_from_file: {}".format(video_id))
+    create_transcription.delay(video_id=video_id)
+    extract_title.delay(video_id=video_id)
 
 
 @shared_task
@@ -45,7 +50,8 @@ def create_transcription(video_id):
     from google.cloud import translate_v2
     from experiments.models import Video
     from constants import TEMP_LOCAL_PATH, FLOW_STATUS
-
+    send_slack_message.delay(channel="#hackathon-2023-logs", username="Log:{}".format(video_id),
+                             text="Start create_transcription: {}".format(video_id))
     try:
         video = Video.objects.get(pk=video_id)
     except Video.DoesNotExist:
@@ -73,6 +79,9 @@ def create_transcription(video_id):
         video.status = FLOW_STATUS.TRANSCRIPTION_COMPLETED
         video.translated_text = translated_text
         video.save()
+    send_slack_message.delay(channel="#hackathon-2023-logs", username="Log:{}".format(video_id),
+                             text="End create_transcription: {}".format(video_id))
+    convert_text_to_speech.delay(video_id=video_id)
 
 
 @shared_task
@@ -80,6 +89,8 @@ def extract_title(video_id):
     import requests
     from bs4 import BeautifulSoup
     from experiments.models import Video
+    send_slack_message.delay(channel="#hackathon-2023-logs", username="Log:{}".format(video_id),
+                             text="Start extract_title: {}".format(video_id))
 
     try:
         video = Video.objects.get(pk=video_id)
@@ -96,7 +107,8 @@ def extract_title(video_id):
         video.title = title
         video.slug = video.get_unique_slug()
         video.save()
-        print('saved')
+    send_slack_message.delay(channel="#hackathon-2023-logs", username="Log:{}".format(video_id),
+                             text="End extract_title: {}".format(video_id))
 
 
 @shared_task
@@ -106,10 +118,13 @@ def convert_text_to_speech(video_id):
     from experiments.models import Video
     from constants import TEMP_LOCAL_PATH, FLOW_STATUS
 
+    send_slack_message.delay(channel="#hackathon-2023-logs", username="Log:{}".format(video_id),
+                             text="Start convert_text_to_speech: {}".format(video_id))
+
     try:
         video = Video.objects.get(pk=video_id)
     except Video.DoesNotExist:
-        return
+        return "Video.DoesNotExist"
 
     voice_map = {
         'shah-rukh-khan': '2uIMnkULEb8HIcIhWtLF',
@@ -126,7 +141,7 @@ def convert_text_to_speech(video_id):
         "xi-api-key": settings.ELEVEN_LABS
     }
     data = {
-        "text": video.translated_text,
+        "text": video.translated_text[:100],
         "model_id": "eleven_multilingual_v1",
         "voice_settings": {
             "stability": 0.5,
@@ -149,6 +164,10 @@ def convert_text_to_speech(video_id):
     video.status = FLOW_STATUS.TEXT_TO_SPEECH_IN_PROCESS
     video.save()
 
+    send_slack_message.delay(channel="#hackathon-2023-logs", username="Log:{}".format(video_id),
+                             text="End convert_text_to_speech: {}".format(video_id))
+    replace_video_audio.delay(video_id=video_id)
+
 
 @shared_task
 def replace_video_audio(video_id):
@@ -157,6 +176,8 @@ def replace_video_audio(video_id):
     from experiments.models import Video
     from constants import TEMP_LOCAL_PATH
 
+    send_slack_message.delay(channel="#hackathon-2023-logs", username="Log:{}".format(video_id),
+                             text="Start replace_video_audio: {}".format(video_id))
     try:
         video = Video.objects.get(pk=video_id)
     except Video.DoesNotExist:
@@ -177,6 +198,8 @@ def replace_video_audio(video_id):
         output_path=TEMP_LOCAL_PATH.TEMP_OUTPUT_VIDEO.format(video_id),
     )
     os.system(ffmpeg_command)
+    send_slack_message.delay(channel="#hackathon-2023-logs", username="Log:{}".format(video_id),
+                             text="End replace_video_audio: {}".format(video_id))
 
 
 @shared_task
