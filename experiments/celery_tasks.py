@@ -39,7 +39,6 @@ def separate_audio_from_file(video_id):
     send_slack_message.delay(channel="#hackathon-2023-logs", username="Log:{}".format(video_id),
                              text="End separate_audio_from_file: {}".format(video_id))
     create_transcription.delay(video_id=video_id)
-    extract_title.delay(video_id=video_id)
 
 
 @shared_task
@@ -107,6 +106,8 @@ def extract_title(video_id):
         video.title = title
         video.slug = video.get_unique_slug()
         video.save()
+
+    separate_audio_from_file.delay(video_id=video_id)
     send_slack_message.delay(channel="#hackathon-2023-logs", username="Log:{}".format(video_id),
                              text="End extract_title: {}".format(video_id))
 

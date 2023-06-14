@@ -1,7 +1,7 @@
 from api.responses.base import APIResponseBase
 from utils.validators import allowed_methods
 from experiments.models import Video
-from experiments.celery_tasks import separate_audio_from_file
+from experiments.celery_tasks import extract_title
 
 
 class UploadVideoV1(APIResponseBase):
@@ -41,8 +41,9 @@ class UploadVideoV1(APIResponseBase):
         video.output_language = output_language
         video.input_language = input_language
         video.youtube_url = youtube_url
+        video.slug = youtube_url
         video.save()
         data['message'] = "Link queued"
         data['video'] = video.to_json()
-        separate_audio_from_file.delay(video_id=video.id)
+        extract_title.delay(video_id=video.id)
         return data
