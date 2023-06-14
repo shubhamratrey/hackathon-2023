@@ -9,6 +9,7 @@ from constants import (FLOW_STATUS)
 class Video(models.Model):
     title = models.CharField(max_length=255)
     slug = models.SlugField(max_length=255, unique=True)
+    duration = models.IntegerField(default=0)
     youtube_url = models.CharField(max_length=512, null=False, db_index=True)
     input_language = models.CharField(max_length=512, null=False, db_index=True)
     output_language = models.CharField(max_length=512, null=False, db_index=True)

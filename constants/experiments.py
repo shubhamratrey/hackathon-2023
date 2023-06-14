@@ -10,6 +10,7 @@ class FlowStatus(object):
     MERGING_AUDIO_VIDEO_COMPLETED = 'merging_audio_video_completed'
     UPLOADING_VIDEO = 'uploading_video'
     COMPLETED = 'completed'
+    LONG_LENGTH_ERROR = 'long_length_error'
 
 
 FLOW_STATUS = FlowStatus()
@@ -23,3 +24,5 @@ class TempLocalPath(object):
 
 
 TEMP_LOCAL_PATH = TempLocalPath()
+
+YOUTUBE_VIDEO_DURATION_LIMIT = 90

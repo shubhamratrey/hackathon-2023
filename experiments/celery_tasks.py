@@ -86,8 +86,11 @@ def create_transcription(video_id):
 @shared_task
 def extract_title(video_id):
     import requests
+    import re
     from bs4 import BeautifulSoup
     from experiments.models import Video
+    from constants import FLOW_STATUS, YOUTUBE_VIDEO_DURATION_LIMIT
+
     send_slack_message.delay(channel="#hackathon-2023-logs", username="Log:{}".format(video_id),
                              text="Start extract_title: {}".format(video_id))
 
@@ -99,13 +102,37 @@ def extract_title(video_id):
         response = requests.get(video.youtube_url)
         soup = BeautifulSoup(response.text, "html.parser")
         title_element = soup.find("meta", property="og:title")
-    except Exception:
+        duration_element = soup.find("meta", itemprop="duration")
+    except Exception as e:
+        send_slack_message.delay(channel="#hackathon-2023-logs", username="Log:{}".format(video_id),
+                                 text="ERROR: {}".format(str(e)))
         return
+
+    if duration_element:
+        duration = duration_element["content"]
+        duration_pattern = re.compile(r'PT(\d+H)?(\d+M)?(\d+S)?')
+        duration_parts = duration_pattern.match(duration).groups()
+
+        hours = int(duration_parts[0][:-1]) if duration_parts[0] else 0
+        minutes = int(duration_parts[1][:-1]) if duration_parts[1] else 0
+        seconds = int(duration_parts[2][:-1]) if duration_parts[2] else 0
+
+        total_seconds = hours * 3600 + minutes * 60 + seconds
+        if total_seconds:
+            video.duration = total_seconds
+
     title = title_element["content"]
     if title:
         video.title = title
         video.slug = video.get_unique_slug()
         video.save()
+
+    if video.duration > YOUTUBE_VIDEO_DURATION_LIMIT:
+        video.status = FLOW_STATUS.LONG_LENGTH_ERROR
+        video.save()
+        send_slack_message.delay(channel="#hackathon-2023-logs", username="Log:{}".format(video_id),
+                                 text="LONG LENGTH ERROR: {}".format(video_id))
+        return
 
     separate_audio_from_file.delay(video_id=video_id)
     send_slack_message.delay(channel="#hackathon-2023-logs", username="Log:{}".format(video_id),
