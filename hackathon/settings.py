@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+import json
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -68,6 +69,14 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'hackathon.wsgi.application'
 
+
+def get_secret_values():
+    try:
+        return json.loads(open('secrets_manager.json').read())
+    except:
+        return {}
+
+
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
@@ -117,7 +126,29 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-COMMON_SECRETS = {}
+COMMON_SECRETS = get_secret_values()
+
+REDIS = COMMON_SECRETS.get('redis', {})
+CACHES = {
+    'default': {
+        'BACKEND': COMMON_SECRETS.get('cache_backend'),
+        'LOCATION': REDIS.get('uri', ''),
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'IGNORE_EXCEPTIONS': True,
+            'PARSER_CLASS': 'redis.connection.HiredisParser'
+        }
+    }
+}
+
+REDIS_CONF = {
+    'default': {
+        'host': REDIS.get('host', ''),
+        'port': REDIS.get('port', 0),
+        'db': REDIS.get('db', 0),
+    }
+}
+
 GOOGLE_APPLICATION_CREDENTIALS_PATH = ''
 THIRD_PARTIES = COMMON_SECRETS.get('third-parties', {})
 OPEN_AI_TOKEN = THIRD_PARTIES.get('openai_token', '')
