@@ -1,7 +1,7 @@
 from django.urls import include, re_path
 
-from .home import urls as home_urls
+from .lab import urls as home_urls
 
 urlpatterns = [
-    re_path('^home/', include(home_urls)),
+    re_path('^lab/', include(home_urls)),
 ]
