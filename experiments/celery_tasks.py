@@ -64,15 +64,15 @@ def create_transcription(video_id):
             model="whisper-1",
             file=audio_file,
             response_format='text',
-            language='en',
+            language=video.input_language,
             temperature=0.3
         )
         video.transcription = transcription
         video.save()
-    if not video.translated_text:
+    if not video.translated_text and video.transcription:
         os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = settings.GOOGLE_APPLICATION_CREDENTIALS_PATH
         translate_client = translate_v2.Client()
-        result = translate_client.translate(transcription, target_language=video.output_language)
+        result = translate_client.translate(video.transcription, target_language=video.output_language)
         translated_text = result.get('translatedText')
 
         video.status = FLOW_STATUS.TRANSCRIPTION_COMPLETED
