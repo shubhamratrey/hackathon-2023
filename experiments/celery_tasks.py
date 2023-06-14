@@ -68,7 +68,7 @@ def create_transcription(video_id):
             model="whisper-1",
             file=audio_file,
             response_format='text',
-            language='en',
+            language=video.input_language,
             temperature=0.3,
             prompt=prompt
         )
