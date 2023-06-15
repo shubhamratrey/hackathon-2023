@@ -77,8 +77,13 @@ def get_secret_values():
         return {}
 
 
+COMMON_SECRETS = get_secret_values()
+
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
+DATABASES_SECRETS = COMMON_SECRETS.get('databases', {})
+DEFAULT_DB = DATABASES_SECRETS.get('default', {})
+# DATABASES = {'default': DEFAULT_DB}
 
 DATABASES = {
     'default': {
@@ -126,8 +131,6 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-COMMON_SECRETS = get_secret_values()
-
 REDIS = COMMON_SECRETS.get('redis', {})
 CACHES = {
     'default': {
@@ -148,7 +151,6 @@ REDIS_CONF = {
         'db': REDIS.get('db', 0),
     }
 }
-
 
 BROKER_URL = COMMON_SECRETS.get('celery_broker_url', '')
 CELERY_BROKER_URL = COMMON_SECRETS.get('celery_broker_url', '')

@@ -42,9 +42,14 @@ ELEVENLABS_VOICE_ID_MAP = {
         'shah-rukh-khan': '2uIMnkULEb8HIcIhWtLF',
         'harsha-bhogle': 'tzc0mnukskitnp0xJrm8',
         'arnold': 'VR6AewLTigWG4xSOukaG',
+        'antoni': 'ErXwobaYiN019PkySvjV',
+        'bipin': 'pe8c86EFjKXrXlinhJbs',
+        'male-hindi': 'yqfm2OSa0ihGWSEHH1yz',
     },
     "F": {
         'nissa': 'IBuG3Ez0yncjGriOosVn',
+        'elli': 'MF3mGyEYCl7XYWbV9V6O',
+        'ritu-female-indian': 'j37UtXn8QvFRVJWVDofA',
     },
     "default": 'IBuG3Ez0yncjGriOosVn'
 }

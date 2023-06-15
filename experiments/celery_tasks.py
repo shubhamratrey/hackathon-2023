@@ -215,7 +215,7 @@ def convert_text_to_speech(video_id):
         return
 
     if video.voice_gender == "M":
-        voice_id = ELEVENLABS_VOICE_ID_MAP.get(video.voice_gender, {}).get('harsha-bhogle')
+        voice_id = ELEVENLABS_VOICE_ID_MAP.get(video.voice_gender, {}).get('bipin')
     else:
         voice_id = ELEVENLABS_VOICE_ID_MAP.get(video.voice_gender, {}).get('nissa')
     if not voice_id:
