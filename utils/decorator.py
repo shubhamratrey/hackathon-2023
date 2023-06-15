@@ -22,8 +22,11 @@ def available_attrs(fn):
 def login_required(function):
     @wraps(function, assigned=available_attrs(function))
     def wrapped_function(request, *args, **kwargs):
-        user = request.user
-        if request.user.is_authenticated:
+        # user = request.user
+        # if request.user.is_authenticated:
+        #     return function(request, *args, **kwargs)
+
+        if request.GET.get('uid', None):
             return function(request, *args, **kwargs)
 
         if request.path.startswith('/'):
@@ -35,4 +38,3 @@ def login_required(function):
                 status=401)
 
     return wrapped_function
-

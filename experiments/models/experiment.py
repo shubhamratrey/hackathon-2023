@@ -19,6 +19,7 @@ class Video(models.Model):
     output_language = models.CharField(max_length=512, null=False, db_index=True)
     voice_gender = models.CharField(max_length=1, choices=GENDER_CHOICES, blank=True, null=True, default=None)
     status = models.CharField(max_length=100, null=False, default=FLOW_STATUS.IN_QUEUE)
+    owner_id = models.CharField(max_length=100, null=True, db_index=True)
 
     translated_text = models.TextField(null=True)
     transcription = models.TextField(null=True)

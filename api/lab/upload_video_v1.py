@@ -17,6 +17,7 @@ class UploadVideoV1(APIResponseBase):
         youtube_url = self.get_param('video_url')
         output_language = self.get_param('output_language')
         input_language = self.get_param('input_language')
+        uid = self.get_param('uid')
         voice_gender = str(self.get_param('voice_gender')).lower()
         if not (youtube_url or output_language or input_language or voice_gender):
             self.set_404('Param missing', "INVALID_PARAM")
