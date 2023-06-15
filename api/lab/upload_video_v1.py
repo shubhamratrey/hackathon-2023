@@ -22,6 +22,9 @@ class UploadVideoV1(APIResponseBase):
         if not (youtube_url or output_language or input_language or voice_gender):
             self.set_404('Param missing', "INVALID_PARAM")
             return data
+        if not uid:
+            self.set_404('UID missing', "INVALID_UID")
+            return data
         voice_gender = str(voice_gender).lower()
         voice_gender = "M" if voice_gender == "male" else "F"
 
@@ -32,20 +35,32 @@ class UploadVideoV1(APIResponseBase):
             pass
         else:
             if video:
-                data['video'] = video.to_json()
+                existing_video = Video()
+                existing_video.title = video.title
+                existing_video.slug = video.slug + "-" + uid
+                existing_video.duration = video.duration
+                existing_video.youtube_url = video.youtube_url
+                existing_video.input_language = video.input_language
+                existing_video.output_language = video.output_language
+                existing_video.voice_gender = video.voice_gender
+                existing_video.status = video.status
+                existing_video.owner_id = str(uid)
+                existing_video.translated_text = video.translated_text
+                existing_video.transcription = video.transcription
+                existing_video.voice_id = video.voice_id
+                existing_video.media_key = video.media_key
+                existing_video.save()
+
+                data['video'] = existing_video.to_json()
                 data['message'] = 'Video already exists'
                 return data
-
-        # if Video.objects.filter(youtube_url=youtube_url, input_language=input_language,
-        #                         output_language=output_language).exists():
-        #     self.set_404('Video already exists', "INVALID_VIDEO_URL")
-        #     return data
 
         video = Video()
         video.output_language = output_language
         video.input_language = input_language
         video.youtube_url = youtube_url
         video.slug = youtube_url
+        video.owner_id = str(uid)
         video.voice_gender = voice_gender
         video.save()
         data['message'] = "Link queued"
