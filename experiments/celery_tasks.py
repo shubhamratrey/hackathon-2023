@@ -42,28 +42,29 @@ def separate_audio_from_file(video_id):
 
 
 @shared_task
-def create_transcription(video_id):
+def create_transcription(video_id, use_openai_for_translating=True):
     from django.conf import settings
     import openai
     import os
     from google.cloud import translate_v2
     from experiments.models import Video
-    from constants import TEMP_LOCAL_PATH, FLOW_STATUS
+    from constants import TEMP_LOCAL_PATH, FLOW_STATUS, LANGUAGE_MAPPING
+
     send_slack_message.delay(channel="#hackathon-2023-logs", username="Log:{}".format(video_id),
                              text="Start create_transcription: {}".format(video_id))
     try:
         video = Video.objects.get(pk=video_id)
     except Video.DoesNotExist:
         return
-    output_language = video.output_language
+    output_language = str(video.output_language).lower()
     if not video.transcription:
         video.status = FLOW_STATUS.TRANSCRIPTION_IN_PROCESS
         video.save()
         openai.api_key = settings.OPEN_AI_TOKEN
         audio_file = open(TEMP_LOCAL_PATH.TEMP_INPUT_AUDIO.format(video.id), "rb")
-        prompt = "This audio is youtube reel please try match speed"
-        if output_language == 'hi':
-            prompt = "This audio is youtube reel please try to transcribe as hinglish."
+        prompt = "This audio is youtube reel please try match speed and transcribe in {}".format(
+            LANGUAGE_MAPPING.get(output_language, '')
+        )
         transcription = openai.Audio.transcribe(
             model="whisper-1",
             file=audio_file,
@@ -75,14 +76,19 @@ def create_transcription(video_id):
         video.transcription = transcription
         video.save()
     if not video.translated_text and video.transcription:
-        if output_language == 'hi':
-            prompt = """This audio is youtube reel please try to transcribe as hinglish in hindi text\n\n{}""".format(
-                video.transcription)
+        if use_openai_for_translating:
+            if output_language == 'hi':
+                prompt = """This audio is youtube reel please try to transcribe as hinglish in hindi text\n\n{}""".format(
+                    video.transcription)
+            else:
+                prompt = "This audio is youtube reel please try to transcribe text in {}\n\n{}".format(
+                    LANGUAGE_MAPPING.get(output_language, '').lower(), video.transcription
+                )
             openai.api_key = settings.OPEN_AI_TOKEN
             response = openai.Completion.create(
-                engine='text-davinci-003',
+                engine='gpt-4-32k-0613',
                 prompt=prompt,
-                max_tokens=1500,
+                max_tokens=3000,
                 temperature=0.2,
                 n=1,
                 stop=None,
