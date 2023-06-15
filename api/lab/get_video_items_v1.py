@@ -29,10 +29,16 @@ class GetVideoItemsV1(APIResponseBase):
         try:
             paginated_languages = paginator.page(page_no)
         except InvalidPage:
+            self.set_bad_req('Invalid page.', 'INVALID_PAGE')
             return data
         videos = []
         for video in paginated_languages:
             doc = video.to_json()
             videos.append(doc)
         data['videos'] = videos
+        data['n_pages'] = paginator.num_pages
+        data['n_videos'] = paginator.count
+        if (self.__page_size__ * page_no) < paginator.count:
+            data['next_page'] = page_no + 1
+        data['page'] = page_no
         return data
