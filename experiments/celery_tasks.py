@@ -66,7 +66,9 @@ def create_transcription(video_id, use_openai_for_translating=True):
         video.save()
 
         try:
-            existing_video = Video.objects.get(youtube_url=video.youtube_url, input_language=input_language)
+            existing_video = Video.objects.filter(
+                youtube_url=video.youtube_url, input_language=input_language
+            ).latest('id')
         except Video.DoesNotExist:
             transcription = None
             pass
