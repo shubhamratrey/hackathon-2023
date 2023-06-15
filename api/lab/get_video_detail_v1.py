@@ -13,7 +13,7 @@ class GetVideoDetailV1(APIResponseBase):
     @allowed_methods
     def get_or_create_data(self):
         data = {}
-        video_id = self.get_param('video_id')
+        video_id = self.get_sanitized_int(self.get_param('video_id'))
         yt_link = self.get_param('yt_link')
         if yt_link:
             try:
