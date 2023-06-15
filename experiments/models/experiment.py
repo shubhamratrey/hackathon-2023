@@ -25,10 +25,6 @@ class Video(models.Model):
     voice_id = models.CharField(max_length=15, null=True)
 
     media_key = models.CharField(max_length=512, null=True)
-    # is_active = models.BooleanField(default=True, db_index=True)
-    # data = models.JSONField(default=dict)
-    # original_media_url = models.CharField(max_length=512, default='', db_index=True)
-    # hls_media_key = models.CharField(max_length=512, null=True, db_index=True)
 
     created_on = models.DateTimeField(auto_now_add=True)
     updated_on = models.DateTimeField(auto_now=True)

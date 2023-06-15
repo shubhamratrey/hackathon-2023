@@ -48,7 +48,7 @@ def create_transcription(video_id, use_openai_for_translating=True):
     import os
     from google.cloud import translate_v2
     from experiments.models import Video
-    from constants import TEMP_LOCAL_PATH, FLOW_STATUS, LANGUAGE_MAPPING
+    from constants import TEMP_LOCAL_PATH, FLOW_STATUS, PROMPT_INPUT_LANG_MAPPING, PROMPT_OUTPUT_LANG_MAPPING
 
     send_slack_message.delay(channel="#hackathon-2023-logs", username="Log:{}".format(video_id),
                              text="Start create_transcription: {}".format(video_id))
@@ -56,34 +56,49 @@ def create_transcription(video_id, use_openai_for_translating=True):
         video = Video.objects.get(pk=video_id)
     except Video.DoesNotExist:
         return
+
     output_language = str(video.output_language).lower()
+    input_language = str(video.input_language).lower()
+
     if not video.transcription:
+        # Updating status
         video.status = FLOW_STATUS.TRANSCRIPTION_IN_PROCESS
         video.save()
-        openai.api_key = settings.OPEN_AI_TOKEN
+
+        # Getting extracted audio file from temp folder.
         audio_file = open(TEMP_LOCAL_PATH.TEMP_INPUT_AUDIO.format(video.id), "rb")
-        prompt = "This audio is youtube reel please try match speed and transcribe in {}".format(
-            LANGUAGE_MAPPING.get(output_language, '')
-        )
+
+        # Setting prompt to better result
+        prompt = PROMPT_INPUT_LANG_MAPPING.get(input_language, None)
+        if not prompt:
+            prompt = PROMPT_INPUT_LANG_MAPPING.get('default', None)
+        print(prompt)
+
+        # Calling openAI API to transcribe local audio to given input language
+        openai.api_key = settings.OPEN_AI_TOKEN
         transcription = openai.Audio.transcribe(
             model="whisper-1",
             file=audio_file,
             response_format='text',
-            language=video.input_language,
+            language=input_language,
             temperature=0.3,
             prompt=prompt
         )
+
+        # Updating status
         video.transcription = transcription
         video.save()
+
     if not video.translated_text and video.transcription:
         if use_openai_for_translating:
-            if output_language == 'hi':
-                prompt = """This audio is youtube reel please try to transcribe as hinglish in hindi text\n\n{}""".format(
-                    video.transcription)
-            else:
-                prompt = "This audio is youtube reel please try to translate text in {}\n\n{}".format(
-                    LANGUAGE_MAPPING.get(output_language, '').lower(), video.transcription
-                )
+            # Setting prompt to better output.
+            prompt = PROMPT_OUTPUT_LANG_MAPPING.get((output_language, video.voice_gender), None)
+            if not prompt:
+                prompt = PROMPT_OUTPUT_LANG_MAPPING.get(("default", video.voice_gender), '').format(output_language)
+            prompt += " \n\n {}".format(video.transcription)
+            print(prompt)
+
+            # Calling openAI API to translate transcribed text to english/hindi
             openai.api_key = settings.OPEN_AI_TOKEN
             response = openai.Completion.create(
                 engine='text-davinci-003',
@@ -95,6 +110,7 @@ def create_transcription(video_id, use_openai_for_translating=True):
             )
             translated_text = response.get('choices')[0]['text']
         else:
+            # For fallback condition we might use Google Translate API.
             os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = settings.GOOGLE_APPLICATION_CREDENTIALS_PATH
             translate_client = translate_v2.Client()
             result = translate_client.translate(video.transcription, target_language=video.output_language)
@@ -103,6 +119,7 @@ def create_transcription(video_id, use_openai_for_translating=True):
         video.status = FLOW_STATUS.TRANSCRIPTION_COMPLETED
         video.translated_text = translated_text
         video.save()
+
     send_slack_message.delay(channel="#hackathon-2023-logs", username="Log:{}".format(video_id),
                              text="End create_transcription: {}".format(video_id))
     convert_text_to_speech.delay(video_id=video_id)

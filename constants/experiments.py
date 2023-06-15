@@ -27,6 +27,37 @@ TEMP_LOCAL_PATH = TempLocalPath()
 
 YOUTUBE_VIDEO_DURATION_LIMIT = 90
 
+PROMPT_INPUT_LANG_MAPPING = {
+    "default": "please try match speed and transcribe",
+    "en": "Please try match speed and transcribe in english",
+    "hi": "please try match speed and transcribe in hinglish",
+    "mr": "please try match speed and transcribe in Marathi-English",
+    "ta": "please try match speed and transcribe in Tanglish",
+    "te": "please try match speed and transcribe in Telglish",
+    "bn": "please try match speed and transcribe in Benglish",
+}
+
+PROMPT_OUTPUT_LANG_MAPPING = {
+    ("default", "M"): "translate from english to {} as male",
+    # ("en", "M"): "",
+    ("hi", "M"): "Below text is transcribed from a youtube video please translate this to hinglish in hindi text as "
+                 "male",
+    ("mr", "M"): "translate text to Marathi & write in english script as male",
+    ("ta", "M"): "Convert to Tanglish written in English script as male",
+    ("te", "M"): "Translate to Telglish and return in English script as male accent",
+    # ("bn", "M"): "",
+
+    ("default", "F"): "translate from english to {} as female",
+    # ("en", "F"): "",
+    ("hi", "F"): "Below text is transcribed from a youtube video please translate this to hinglish in hindi text as "
+                 "female",
+    ("mr", "F"): "translate text to Marathi & write in english script as female",
+    ("ta", "F"): "Convert to Tanglish written in English script as female tone",
+    ("te", "F"): "Translate to Telglish and return in English script as female accent",
+    # ("bn", "F"): "",
+
+}
+
 LANGUAGE_MAPPING = {
     'aa': 'Afar',
     'ab': 'Abkhazian',
