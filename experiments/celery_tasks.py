@@ -81,12 +81,12 @@ def create_transcription(video_id, use_openai_for_translating=True):
                 prompt = """This audio is youtube reel please try to transcribe as hinglish in hindi text\n\n{}""".format(
                     video.transcription)
             else:
-                prompt = "This audio is youtube reel please try to transcribe text in {}\n\n{}".format(
+                prompt = "This audio is youtube reel please try to translate text in {}\n\n{}".format(
                     LANGUAGE_MAPPING.get(output_language, '').lower(), video.transcription
                 )
             openai.api_key = settings.OPEN_AI_TOKEN
             response = openai.Completion.create(
-                engine='gpt-4-32k-0613',
+                engine='text-davinci-003',
                 prompt=prompt,
                 max_tokens=3000,
                 temperature=0.2,
