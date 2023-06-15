@@ -65,25 +65,35 @@ def create_transcription(video_id, use_openai_for_translating=True):
         video.status = FLOW_STATUS.TRANSCRIPTION_IN_PROCESS
         video.save()
 
-        # Getting extracted audio file from temp folder.
-        audio_file = open(TEMP_LOCAL_PATH.TEMP_INPUT_AUDIO.format(video.id), "rb")
+        try:
+            existing_video = Video.objects.get(youtube_url=video.youtube_url, input_language=input_language)
+        except Video.DoesNotExist:
+            transcription = None
+            pass
+        else:
+            transcription = existing_video.transcription
+            print("Transcription exists: {}\n".format(video_id, transcription))
 
-        # Setting prompt to better result
-        prompt = PROMPT_INPUT_LANG_MAPPING.get(input_language, None)
-        if not prompt:
-            prompt = PROMPT_INPUT_LANG_MAPPING.get('default', None)
-        print(prompt)
+        if not transcription:
+            # Getting extracted audio file from temp folder.
+            audio_file = open(TEMP_LOCAL_PATH.TEMP_INPUT_AUDIO.format(video.id), "rb")
 
-        # Calling openAI API to transcribe local audio to given input language
-        openai.api_key = settings.OPEN_AI_TOKEN
-        transcription = openai.Audio.transcribe(
-            model="whisper-1",
-            file=audio_file,
-            response_format='text',
-            language=input_language,
-            temperature=0.3,
-            prompt=prompt
-        )
+            # Setting prompt to better result
+            prompt = PROMPT_INPUT_LANG_MAPPING.get(input_language, None)
+            if not prompt:
+                prompt = PROMPT_INPUT_LANG_MAPPING.get('default', None)
+            print(prompt)
+
+            # Calling openAI API to transcribe local audio to given input language
+            openai.api_key = settings.OPEN_AI_TOKEN
+            transcription = openai.Audio.transcribe(
+                model="whisper-1",
+                file=audio_file,
+                response_format='text',
+                language=input_language,
+                temperature=0.3,
+                prompt=prompt
+            )
 
         # Updating status
         video.transcription = transcription
