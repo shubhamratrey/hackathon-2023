@@ -199,7 +199,7 @@ def convert_text_to_speech(video_id):
     import requests
     from django.conf import settings
     from experiments.models import Video
-    from constants import TEMP_LOCAL_PATH, FLOW_STATUS
+    from constants import TEMP_LOCAL_PATH, FLOW_STATUS, ELEVENLABS_VOICE_ID_MAP
 
     send_slack_message.delay(channel="#hackathon-2023-logs", username="Log:{}".format(video_id),
                              text="Start convert_text_to_speech: {}".format(video_id))
@@ -214,22 +214,12 @@ def convert_text_to_speech(video_id):
         replace_video_audio.delay(video_id=video_id)
         return
 
-    voice_map = {
-        "M": {
-            'shah-rukh-khan': '2uIMnkULEb8HIcIhWtLF',
-            'harsha-bhogle': 'tzc0mnukskitnp0xJrm8',
-            'arnold': 'VR6AewLTigWG4xSOukaG',
-        },
-        "F": {
-            'nissa': 'IBuG3Ez0yncjGriOosVn',
-        }
-    }
     if video.voice_gender == "M":
-        voice_id = voice_map.get(video.voice_gender, {}).get('harsha-bhogle')
+        voice_id = ELEVENLABS_VOICE_ID_MAP.get(video.voice_gender, {}).get('harsha-bhogle')
     else:
-        voice_id = voice_map.get(video.voice_gender, {}).get('nissa')
+        voice_id = ELEVENLABS_VOICE_ID_MAP.get(video.voice_gender, {}).get('nissa')
     if not voice_id:
-        voice_id = 'IBuG3Ez0yncjGriOosVn'
+        voice_id = ELEVENLABS_VOICE_ID_MAP.get("default")
 
     url = "https://api.elevenlabs.io/v1/text-to-speech/{voice_id}".format(voice_id=voice_id)
     headers = {

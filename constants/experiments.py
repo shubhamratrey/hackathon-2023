@@ -37,6 +37,18 @@ PROMPT_INPUT_LANG_MAPPING = {
     "bn": "please try match speed and transcribe in Benglish",
 }
 
+ELEVENLABS_VOICE_ID_MAP = {
+    "M": {
+        'shah-rukh-khan': '2uIMnkULEb8HIcIhWtLF',
+        'harsha-bhogle': 'tzc0mnukskitnp0xJrm8',
+        'arnold': 'VR6AewLTigWG4xSOukaG',
+    },
+    "F": {
+        'nissa': 'IBuG3Ez0yncjGriOosVn',
+    },
+    "default": 'IBuG3Ez0yncjGriOosVn'
+}
+
 PROMPT_OUTPUT_LANG_MAPPING = {
     ("default", "M"): "translate from english to {} as male",
     # ("en", "M"): "",
