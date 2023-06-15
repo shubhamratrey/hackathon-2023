@@ -21,7 +21,10 @@ class GetVideoItemsV1(APIResponseBase):
             self.set_bad_req("Invalid page number: {}".format(page_no), 'INVALID_PAGE')
             return data
         owner_id = self.get_param("uid")
-        videos = Video.objects.filter(owner_id=owner_id).order_by('-id')
+        if owner_id == "all":
+            videos = Video.objects.all().order_by('-id')
+        else:
+            videos = Video.objects.filter(owner_id=owner_id).order_by('-id')
         paginator = Paginator(videos, page_size)
         try:
             paginated_languages = paginator.page(page_no)
