@@ -56,7 +56,7 @@ ELEVENLABS_VOICE_ID_MAP = {
 
 PROMPT_OUTPUT_LANG_MAPPING = {
     ("default", "M"): "translate from english to {} as male",
-    # ("en", "M"): "",
+    ("en", "M"): "translate this english as male",
     ("hi", "M"): "Below text is transcribed from a youtube video please translate this to hinglish in hindi text as "
                  "male",
     ("mr", "M"): "translate text to Marathi & write in english script as male",
@@ -65,7 +65,7 @@ PROMPT_OUTPUT_LANG_MAPPING = {
     # ("bn", "M"): "",
 
     ("default", "F"): "translate from english to {} as female",
-    # ("en", "F"): "",
+    ("en", "F"): "translate this english as female",
     ("hi", "F"): "Below text is transcribed from a youtube video please translate this to hinglish in hindi text as "
                  "female",
     ("mr", "F"): "translate text to Marathi & write in english script as female",
