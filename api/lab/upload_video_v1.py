@@ -22,9 +22,9 @@ class UploadVideoV1(APIResponseBase):
         if not (youtube_url or output_language or input_language or voice_gender):
             self.set_404('Param missing', "INVALID_PARAM")
             return data
-        if not uid:
-            self.set_404('UID missing', "INVALID_UID")
-            return data
+        # if not uid:
+        #     self.set_404('UID missing', "INVALID_UID")
+        #     return data
         voice_gender = str(voice_gender).lower()
         voice_gender = "M" if voice_gender == "male" else "F"
 
@@ -34,7 +34,7 @@ class UploadVideoV1(APIResponseBase):
         except Video.DoesNotExist:
             pass
         else:
-            if video:
+            if video and uid:
                 existing_video = Video()
                 existing_video.title = video.title
                 existing_video.slug = video.slug + "-" + uid
@@ -60,7 +60,8 @@ class UploadVideoV1(APIResponseBase):
         video.input_language = input_language
         video.youtube_url = youtube_url
         video.slug = youtube_url
-        video.owner_id = str(uid)
+        if uid:
+            video.owner_id = str(uid)
         video.voice_gender = voice_gender
         video.save()
         data['message'] = "Link queued"
